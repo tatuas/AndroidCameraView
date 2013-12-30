@@ -12,13 +12,19 @@ import android.widget.ImageView;
 
 public class BitmapView extends ImageView {
     private Bitmap bitmap;
-    private String path;
+    private Bitmap.Config config = Bitmap.Config.ARGB_8888;
     private final String NAMESPACE = "http://tatuas.com/android/BitmapView";
     private File file;
+    private String path;
 
     public BitmapView(Context context) {
         super(context);
-        this.path = null;
+    }
+
+    public BitmapView(Context context, String path) {
+        super(context);
+        this.path = path;
+        createFile(path);
     }
 
     public BitmapView(Context context, AttributeSet attrs) {
@@ -31,11 +37,23 @@ public class BitmapView extends ImageView {
         createFile(attrs.getAttributeValue(NAMESPACE, "pictureFilePath"));
     }
 
+    public void setImageQuality(Bitmap.Config config) {
+        this.config = config;
+    }
+
     private void createFile(String path) {
         if (path != null) {
             File f = new File(path);
             file = f;
         }
+    }
+
+    public void updateImageFromFile(String path) {
+        setImageBitmap(null);
+        refreshDrawableState();
+        bitmap.recycle();
+        createFile(path);
+        setImageFromFile(file, getWidth(), getHeight());
     }
 
     public void setImageFromFile(File file, int widthDp, int heightDp) {
@@ -55,10 +73,13 @@ public class BitmapView extends ImageView {
         BitmapFactory.decodeFile(path, options);
         options.inSampleSize = calculateInSampleSize(options, widthDp, heightDp);
         options.inJustDecodeBounds = false;
+        options.inPreferredConfig = config;
 
         bitmap = BitmapFactory.decodeFile(path, options);
 
         setImageBitmap(bitmap);
+
+        refreshDrawableState();
     }
 
     public Bitmap getBitmap() {
@@ -110,9 +131,8 @@ public class BitmapView extends ImageView {
     @Override
     protected void onDetachedFromWindow() {
         setImageDrawable(null);
-        if (bitmap != null) {
+        if (!bitmap.isRecycled()) {
             bitmap.recycle();
-            bitmap = null;
         }
         super.onDetachedFromWindow();
     }
