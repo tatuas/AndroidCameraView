@@ -8,6 +8,7 @@ import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import com.tatuas.android.bitmapview.BitmapView;
 
 public class CameraLayout extends FrameLayout {
     private CameraView cameraView;
