@@ -1,37 +1,26 @@
 package com.tatuas.android.cameraview;
 
-import java.io.FileOutputStream;
-
-import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
-import android.graphics.BitmapFactory;
 
-public class Thumbnail {
-    public String path;
-    public int thumbSizeScale;
+public class Thumbnail extends PictureMaker {
+    private int thumbSizeScale = 1;
+    private CompressFormat format = CompressFormat.JPEG;
+    private int quality = 100;
 
     public Thumbnail(String path, int sizeScale) {
-        this.path = path;
+        super(path);
         this.thumbSizeScale = sizeScale;
     }
 
-    public String make(byte[] data) {
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = thumbSizeScale;
+    public void setQuality(int scale) {
+        this.quality = scale;
+    }
 
-        FileOutputStream fos = null;
-        try {
-            fos = new FileOutputStream(path);
-            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0,
-                    data.length, options);
-            bitmap.compress(CompressFormat.JPEG, 100, fos);
-            fos.close();
-            if (bitmap != null) {
-                bitmap.recycle();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return path;
+    public void setFormat(CompressFormat format) {
+        this.format = format;
+    }
+
+    public boolean make(byte[] data) {
+        return make(data, thumbSizeScale, quality, format);
     }
 }

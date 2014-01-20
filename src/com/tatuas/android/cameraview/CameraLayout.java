@@ -8,6 +8,7 @@ import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+
 import com.tatuas.android.bitmapview.BitmapView;
 
 public class CameraLayout extends FrameLayout {
@@ -71,12 +72,19 @@ public class CameraLayout extends FrameLayout {
     }
 
     public void showPreview(String path) {
+        if (path == null) {
+            return;
+        }
+
         File file = new File(path);
+        if (!file.exists()) {
+            return;
+        }
 
         int width = getDisplayWidth();
         int height = getDisplayHeight();
 
-        bitmapView.setImageFromFile(file, width, height);
+        bitmapView.setImageFromFilePath(file.getAbsolutePath(), width, height);
         addView(bitmapView, 1);
     }
 

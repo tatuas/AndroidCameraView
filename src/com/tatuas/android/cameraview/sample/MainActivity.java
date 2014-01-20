@@ -6,12 +6,17 @@ import java.util.Date;
 
 import com.tatuas.android.cameraview.AfterShutterListener;
 import com.tatuas.android.cameraview.CameraLayout;
+import com.tatuas.android.cameraview.Options;
 import com.tatuas.android.cameraview.Shutter;
+import com.tatuas.android.cameraview.Size;
+import com.tatuas.android.cameraview.Thumbnail;
+import com.tatuas.android.cameraview.Type;
 
 import android.os.Bundle;
 import android.os.Environment;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.graphics.Bitmap.CompressFormat;
 import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -25,11 +30,21 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
 
         final String savePath = createSavePath();
-        // final String thumbSavePath = savePath + ".thumb.jpg";
+        final String thumbSavePath = savePath + ".thumb.jpg";
 
         final CameraLayout cl = (CameraLayout) findViewById(R.id.cl);
 
-        final Shutter shutter = new Shutter(cl.getCameraView(), this, null);
+        final Options options = new Options();
+
+        //size or calculateScale use after set
+        options.setCalculateScale(4);
+        options.setPictureSize(new Size(1600, 1200));
+
+        options.setPictureType(Type.JPEG);
+        options.setQuality(60);
+
+//        final Shutter shutter = new Shutter(cl.getCameraView(), this);
+        final Shutter shutter = new Shutter(cl.getCameraView(), this, options);
         shutter.setAfterShutterListener(new AfterShutterListener() {
             @Override
             public void afterShutter() {
@@ -41,9 +56,13 @@ public class MainActivity extends Activity {
         shutterBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Thumbnail thumb = new Thumbnail(thumbSavePath, 8);
-                // shutter.exec(savePath, thumb);
-                shutter.exec(savePath);
+                //shutter.exec(savePath);
+
+                Thumbnail thumb = new Thumbnail(thumbSavePath, 12);
+                thumb.setFormat(CompressFormat.JPEG);
+                thumb.setQuality(50);
+                shutter.exec(savePath, thumb);
+
                 v.setClickable(false);
             }
         });
