@@ -62,8 +62,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             camera = null;
             return;
         }
-
-        camera = Camera.open();
+        try {
+            camera = Camera.open();
+        } catch (Exception e) {
+            camera = null;
+        }
 
         if (camera == null) {
             return;
