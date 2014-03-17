@@ -5,7 +5,6 @@ import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.PictureCallback;
-import android.util.Log;
 
 public class Shutter implements AutoFocusCallback, PictureCallback {
     private Context context;
@@ -82,8 +81,6 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
                     camera.startPreview();
                 }
             }
-        } else {
-            Log.e("sdfdfs", "sdfsdfsd");
         }
     }
 
