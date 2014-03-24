@@ -8,16 +8,16 @@ import java.util.List;
 
 import android.hardware.Camera;
 
-public class Size {
+public class PictureSize {
     public int width;
     public int height;
 
-    public Size() {
+    public PictureSize() {
         this.width = 0;
         this.height = 0;
     }
 
-    public Size(int width, int height) {
+    public PictureSize(int width, int height) {
         this.width = width;
         this.height = height;
     }
@@ -39,7 +39,7 @@ public class Size {
         size.height = this.height;
     }
 
-    public static Size getMaxSizeByAspectRatio(List<Camera.Size> cameraSizes,
+    public static PictureSize getMaxSizeByAspectRatio(List<Camera.Size> cameraSizes,
             AspectRatio aspect) {
         List<Camera.Size> markSizes = new ArrayList<Camera.Size>();
         for (Camera.Size s : cameraSizes) {
@@ -51,7 +51,7 @@ public class Size {
         }
 
         Collections.sort(markSizes, new MyComp());
-        return new Size(markSizes.get(0).width, markSizes.get(0).height);
+        return new PictureSize(markSizes.get(0).width, markSizes.get(0).height);
     }
 
     public static AspectRatio getAspectRatio(int width, int height) {

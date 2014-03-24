@@ -15,45 +15,21 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
     private AfterShutterListener afterShutterListener;
     private CameraView cameraView;
 
-    public Shutter(CameraView cameraView, Context context) {
-        this.cameraView = cameraView;
-        this.context = context;
-        this.options = new Options();
-    }
-
     public Shutter(CameraView cameraView, Context context, Options options) {
         this.cameraView = cameraView;
         this.context = context;
         this.options = options;
     }
 
-    public Context getContext() {
-        return this.context;
-    }
-
     public void exec(String savePath) {
         this.savePath = savePath;
-
-        if (cameraView.getCamera() != null) {
-            cameraView.getCamera().autoFocus(this);
-        }
+        shot();
     }
 
     public void exec(String savePath, Thumbnail thumb) {
         this.savePath = savePath;
         this.thumb = thumb;
-
-        if (cameraView.getCamera() != null) {
-            cameraView.getCamera().autoFocus(this);
-        }
-    }
-
-    public void setBeforeShutterListener(BeforeShutterListener listener) {
-        this.beforeShutterListener = listener;
-    }
-
-    public void setAfterShutterListener(AfterShutterListener listener) {
-        this.afterShutterListener = listener;
+        shot();
     }
 
     @Override
@@ -80,6 +56,28 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
                 if (options.isRestartPreviewAfterShutter()) {
                     camera.startPreview();
                 }
+            }
+        }
+    }
+
+    public Context getContext() {
+        return this.context;
+    }
+
+    public void setBeforeShutterListener(BeforeShutterListener listener) {
+        this.beforeShutterListener = listener;
+    }
+
+    public void setAfterShutterListener(AfterShutterListener listener) {
+        this.afterShutterListener = listener;
+    }
+
+    private void shot() {
+        if (cameraView.getCamera() != null) {
+            if (options.isExecAutoFocusWhenShutter()) {
+                cameraView.getCamera().autoFocus(this);
+            } else {
+                cameraView.getCamera().takePicture(null, null, this);
             }
         }
     }
@@ -121,7 +119,7 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
             height = bitmapOptions.outHeight;
         }
 
-        if (options.useCalculateScale()) {
+        if (options.isUseCalculateScale()) {
             bitmapOptions.inSampleSize = options.getCalculateScale();
         } else {
             bitmapOptions.inSampleSize = pm.calculateInSampleSize(

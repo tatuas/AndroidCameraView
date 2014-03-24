@@ -5,12 +5,16 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import com.tatuas.android.cameraview.AfterShutterListener;
+import com.tatuas.android.cameraview.BeforeShutterListener;
+import com.tatuas.android.cameraview.OpenCameraFailedListener;
 import com.tatuas.android.cameraview.CameraLayout;
+import com.tatuas.android.cameraview.CameraType;
+import com.tatuas.android.cameraview.CameraView;
 import com.tatuas.android.cameraview.Options;
 import com.tatuas.android.cameraview.Shutter;
-import com.tatuas.android.cameraview.Size;
+import com.tatuas.android.cameraview.PictureSize;
 import com.tatuas.android.cameraview.Thumbnail;
-import com.tatuas.android.cameraview.Type;
+import com.tatuas.android.cameraview.PictureType;
 
 import android.os.Bundle;
 import android.os.Environment;
@@ -21,6 +25,7 @@ import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.Toast;
 
 @SuppressLint("SimpleDateFormat")
 public class MainActivity extends Activity {
@@ -33,18 +38,32 @@ public class MainActivity extends Activity {
         final String thumbSavePath = savePath + ".thumb.jpg";
 
         final CameraLayout cl = (CameraLayout) findViewById(R.id.cl);
+        final CameraView cv = cl.getCameraView();
+        cv.setCameraType(CameraType.BACK);
+        cv.setCameraFailedListener(new OpenCameraFailedListener() {
+            @Override
+            public void onFailed(String errorMsg) {
+                Toast.makeText(cv.getContext(), errorMsg, Toast.LENGTH_LONG).show();
+            }
+        });
 
         final Options options = new Options();
 
-        //size or calculateScale use after set
+        //size or calculateScale option uses last set param.
         options.setCalculateScale(4);
-        options.setPictureSize(new Size(1600, 1200));
+        options.setPictureSize(new PictureSize(1600, 1200));
 
-        options.setPictureType(Type.JPEG);
+        options.setPictureType(PictureType.JPEG);
         options.setQuality(60);
 
-//        final Shutter shutter = new Shutter(cl.getCameraView(), this);
-        final Shutter shutter = new Shutter(cl.getCameraView(), this, options);
+        final Shutter shutter = new Shutter(cv, this, options);
+        shutter.setBeforeShutterListener(new BeforeShutterListener() {
+            @Override
+            public void beforeShutter() {
+                
+            }
+        });
+
         shutter.setAfterShutterListener(new AfterShutterListener() {
             @Override
             public void afterShutter() {
