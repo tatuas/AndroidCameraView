@@ -39,7 +39,7 @@ public class MainActivity extends Activity {
 
         final CameraLayout cl = (CameraLayout) findViewById(R.id.cl);
         final CameraView cv = cl.getCameraView();
-        cv.setCameraType(CameraType.BACK);
+        cv.setCameraType(CameraType.FRONT);
         cv.setCameraFailedListener(new OpenCameraFailedListener() {
             @Override
             public void onFailed(String errorMsg) {

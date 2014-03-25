@@ -13,18 +13,21 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Display;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.Toast;
 
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
+    private final static String NAMESPACE = "http://tatuas.com/android/AndroidCameraView";
     private Camera camera;
     private Parameters cameraParams;
     private SurfaceHolder holder;
     private OpenCameraFailedListener cameraFailedListener;
-    private CameraType cameraType = CameraType.FRONT;
+    private CameraType cameraType = CameraType.BACK;
 
     public CameraView(Context context) {
         super(context);
@@ -33,12 +36,35 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        setCameraTypeFromAttr(attrs.getAttributeValue(NAMESPACE, "camera"));
         setHolder();
     }
 
     public CameraView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        setCameraTypeFromAttr(attrs.getAttributeValue(NAMESPACE, "camera"));
         setHolder();
+    }
+
+    private void setCameraTypeFromAttr(String typeString) {
+        CameraType type = CameraType.BACK;
+
+        if (typeString == null) {
+            return;
+        }
+
+        switch (typeString) {
+            case "front":
+                type = CameraType.FRONT;
+                break;
+            case "back":
+                type = CameraType.BACK;
+                break;
+            default:
+                break;
+        }
+
+        this.cameraType = type;
     }
 
     @SuppressLint("NewApi")
@@ -47,7 +73,8 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         if (!hasCamera()) {
             camera = null;
             if (cameraFailedListener != null) {
-                this.cameraFailedListener.onFailed("This device has any camera");
+                this.cameraFailedListener
+                        .onFailed("This device has any camera");
             }
             return;
         }
@@ -108,36 +135,36 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
             int height) {
-    
+
         if (holder.getSurface() == null) {
             return;
         }
-    
+
         if (camera == null) {
             return;
         }
-    
+
         camera.stopPreview();
-    
+
         if (cameraParams != null) {
             setCameraPreviewSize(PictureSize.AspectRatio.NORMAL, width, height);
             setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             setMaxPictureSize(AspectRatio.NORMAL);
+
             int displayRotation = getRotationValue();
             int pictureRotation = getRotationValue();
-            if (this.cameraType.equals(CameraType.FRONT)) {
-                displayRotation = addDegreesToRotation(displayRotation, 90);
-                pictureRotation = addDegreesToRotation(pictureRotation, -270);
-                if (Util.isLandscape(getContext())) {
-                    displayRotation = addDegreesToRotation(displayRotation, -270);
-                    pictureRotation = addDegreesToRotation(pictureRotation, 90);
+
+            if (cameraType.equals(CameraType.FRONT)) {
+                if (Util.isPortrait(getContext())) {
+                    pictureRotation = addDegreesToRotation(pictureRotation, 180);
                 }
             }
+
             setCameraDisplayOrientation(displayRotation);
             cameraParams.setRotation(pictureRotation);
             camera.setParameters(cameraParams);
         }
-    
+
         camera.startPreview();
     }
 
@@ -147,39 +174,48 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
     public int getRotationValue() {
         int result = 0;
-        Display display = ((Activity) getContext()).getWindowManager()
-                .getDefaultDisplay();
-        int rotation = display.getRotation();
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                if (Util.isPortrait(getContext())) {
-                    result = 90;
-                } else {
-                    result = 0;
-                }
-            case Surface.ROTATION_90:
-                if (Util.isPortrait(getContext())) {
-                    result = 270;
-                } else {
-                    result = 0;
-                }
-            case Surface.ROTATION_180:
-                if (Util.isPortrait(getContext())) {
-                    result = 180;
-                } else {
-                    result = 270;
-                }
-            case Surface.ROTATION_270:
-                if (Util.isPortrait(getContext())) {
-                    result = 90;
-                } else {
-                    result = 180;
-                }
-            default:
+        int rotation = ((Activity) getContext()).getWindowManager()
+                .getDefaultDisplay().getRotation();
+
+        if (rotation == Surface.ROTATION_0) {
+            if (Util.isPortrait(getContext())) {
+                result = 90;
+            } else {
                 result = 0;
+            }
+        } else if (rotation == Surface.ROTATION_90) {
+            if (Util.isPortrait(getContext())) {
+                result = 270;
+            } else {
+                result = 0;
+            }
+        } else if (rotation == Surface.ROTATION_180) {
+            if (Util.isPortrait(getContext())) {
+                result = 180;
+            } else {
+                result = 270;
+            }
+        } else if (rotation == Surface.ROTATION_270) {
+            if (Util.isPortrait(getContext())) {
+                result = 90;
+            } else {
+                result = 180;
+            }
         }
-    
+
         return result;
+    }
+
+    private int addDegreesToRotation(int baseParam, int param) {
+        int rotation = baseParam;
+        rotation = (Math.abs(rotation + param));
+        int absRotation = rotation % 360;
+        if (absRotation == 0) {
+            rotation = 0;
+        } else {
+            rotation = absRotation;
+        }
+        return rotation;
     }
 
     public Camera getCamera() {
@@ -188,8 +224,8 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
     public Camera.Parameters getCameraParams() {
         return camera.getParameters();
-    } 
-    
+    }
+
     public void setCameraFailedListener(OpenCameraFailedListener listener) {
         this.cameraFailedListener = listener;
     }
@@ -197,11 +233,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     @SuppressWarnings("deprecation")
     private void setHolder() {
         holder = getHolder();
-    
+
         if (holder == null) {
             return;
         }
-    
+
         holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
@@ -215,19 +251,12 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         boolean flag = false;
         flag = getContext().getPackageManager().hasSystemFeature(
                 PackageManager.FEATURE_CAMERA);
-        return flag;
-    }
 
-    private int addDegreesToRotation(int baseParam, int param) {
-        int rotation = baseParam;
-        rotation = (Math.abs(rotation + param));
-        int absRotation = rotation % 360;
-        if (absRotation == 0) {
-            rotation = 0;
-        } else {
-            rotation = absRotation;
+        if (Util.is2012Nexus7(cameraType)) {
+            flag = true;
         }
-        return rotation;
+
+        return flag;
     }
 
     private void setCameraDisplayOrientation(int rotation) {
@@ -309,16 +338,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         setLayoutParams(l);
     }
 
-    private void setAntiBanding(String mode) {
-        List<String> supported = cameraParams.getSupportedAntibanding();
-        if (supported == null) {
-            return;
-        }
-        if (supported.contains(mode)) {
-            cameraParams.setAntibanding(mode);
-        }
-    }
-
     private void setFocusMode(String mode) {
         if (cameraParams == null) {
             return;
@@ -328,10 +347,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         if (supported.contains(mode)) {
             cameraParams.setFocusMode(mode);
         }
-    }
-
-    private void setPictureRotation() {
-        return;
     }
 
     private void setMaxPictureSize(PictureSize.AspectRatio aspect) {
