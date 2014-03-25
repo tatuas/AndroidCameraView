@@ -1,5 +1,6 @@
 package com.tatuas.android.cameraview;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
@@ -14,11 +15,13 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
     private BeforeShutterListener beforeShutterListener;
     private AfterShutterListener afterShutterListener;
     private CameraView cameraView;
+    private boolean isFront;
 
     public Shutter(CameraView cameraView, Context context, Options options) {
         this.cameraView = cameraView;
         this.context = context;
         this.options = options;
+        this.isFront = false;
     }
 
     public void exec(String savePath) {
@@ -77,6 +80,9 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
             if (options.isExecAutoFocusWhenShutter()) {
                 cameraView.getCamera().autoFocus(this);
             } else {
+                if (cameraView.getCameraType().equals(CameraType.FRONT)) {
+                    isFront = true;
+                }
                 cameraView.getCamera().takePicture(null, null, this);
             }
         }
@@ -84,7 +90,8 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
 
     private boolean savePicture(byte[] data, Thumbnail thumb) {
         try {
-            PictureMaker pm = new PictureMaker(savePath);
+            PictureMaker pm = new PictureMaker(savePath,
+                    Util.getDisplayRotationValue((Activity) context), isFront);
             BitmapFactory.Options bitmapOptions = createBitmapOptions(data, pm);
             bitmapOptions.inPreferredConfig = options.getPictureConfig();
 

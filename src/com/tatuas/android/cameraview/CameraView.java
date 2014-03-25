@@ -13,14 +13,11 @@ import android.content.pm.PackageManager;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.Display;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup.LayoutParams;
-import android.widget.Toast;
 
+@SuppressLint("InlinedApi")
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private final static String NAMESPACE = "http://tatuas.com/android/AndroidCameraView";
     private Camera camera;
@@ -28,6 +25,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder holder;
     private OpenCameraFailedListener cameraFailedListener;
     private CameraType cameraType = CameraType.BACK;
+    private String cameraFocus = Camera.Parameters.FOCUS_MODE_AUTO;
 
     public CameraView(Context context) {
         super(context);
@@ -148,20 +146,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
         if (cameraParams != null) {
             setCameraPreviewSize(PictureSize.AspectRatio.NORMAL, width, height);
-            setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
             setMaxPictureSize(AspectRatio.NORMAL);
+            setFocusMode(cameraFocus);
+            setCameraDisplayOrientation(Util
+                    .getDisplayRotationValue((Activity) getContext()));
 
-            int displayRotation = getRotationValue();
-            int pictureRotation = getRotationValue();
-
-            if (cameraType.equals(CameraType.FRONT)) {
-                if (Util.isPortrait(getContext())) {
-                    pictureRotation = addDegreesToRotation(pictureRotation, 180);
-                }
-            }
-
-            setCameraDisplayOrientation(displayRotation);
-            cameraParams.setRotation(pictureRotation);
             camera.setParameters(cameraParams);
         }
 
@@ -172,50 +161,12 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         this.cameraType = type;
     }
 
-    public int getRotationValue() {
-        int result = 0;
-        int rotation = ((Activity) getContext()).getWindowManager()
-                .getDefaultDisplay().getRotation();
-
-        if (rotation == Surface.ROTATION_0) {
-            if (Util.isPortrait(getContext())) {
-                result = 90;
-            } else {
-                result = 0;
-            }
-        } else if (rotation == Surface.ROTATION_90) {
-            if (Util.isPortrait(getContext())) {
-                result = 270;
-            } else {
-                result = 0;
-            }
-        } else if (rotation == Surface.ROTATION_180) {
-            if (Util.isPortrait(getContext())) {
-                result = 180;
-            } else {
-                result = 270;
-            }
-        } else if (rotation == Surface.ROTATION_270) {
-            if (Util.isPortrait(getContext())) {
-                result = 90;
-            } else {
-                result = 180;
-            }
-        }
-
-        return result;
+    public CameraType getCameraType() {
+        return this.cameraType;
     }
 
-    private int addDegreesToRotation(int baseParam, int param) {
-        int rotation = baseParam;
-        rotation = (Math.abs(rotation + param));
-        int absRotation = rotation % 360;
-        if (absRotation == 0) {
-            rotation = 0;
-        } else {
-            rotation = absRotation;
-        }
-        return rotation;
+    public void setCameraPreviewFocus(String type) {
+        this.cameraFocus = type;
     }
 
     public Camera getCamera() {
@@ -242,11 +193,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
-    private boolean isSupportedAutoFocus() {
-        return getContext().getPackageManager().hasSystemFeature(
-                "android.hardware.camera.autofocus");
-    }
-
     private boolean hasCamera() {
         boolean flag = false;
         flag = getContext().getPackageManager().hasSystemFeature(
@@ -261,6 +207,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
     private void setCameraDisplayOrientation(int rotation) {
         camera.setDisplayOrientation(rotation);
+    }
+
+    public boolean isSupportedAutoFocus() {
+        return getContext().getPackageManager().hasSystemFeature(
+                "android.hardware.camera.autofocus");
     }
 
     private void setCameraPreviewSize(PictureSize.AspectRatio aspect,
@@ -338,7 +289,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         setLayoutParams(l);
     }
 
-    private void setFocusMode(String mode) {
+    public void setFocusMode(String mode) {
         if (cameraParams == null) {
             return;
         }
@@ -363,6 +314,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         PictureSize size = PictureSize.getMaxSizeByAspectRatio(pictureSizes,
                 aspect);
         cameraParams.setPictureSize(size.width, size.height);
-        cameraParams.setRotation(getRotationValue());
     }
+
+
 }

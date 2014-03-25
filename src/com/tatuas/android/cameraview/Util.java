@@ -1,8 +1,10 @@
 package com.tatuas.android.cameraview;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Build;
+import android.view.Surface;
 
 public class Util {
     public static boolean isFroyo() {
@@ -27,5 +29,51 @@ public class Util {
         } else {
             return false;
         }
+    }
+
+    public static int getDisplayRotationValue(Activity activity) {
+        int result = 0;
+        int rotation = activity.getWindowManager().getDefaultDisplay()
+                .getRotation();
+
+        if (rotation == Surface.ROTATION_0) {
+            if (Util.isPortrait(activity)) {
+                result = 90;
+            } else {
+                result = 0;
+            }
+        } else if (rotation == Surface.ROTATION_90) {
+            if (Util.isPortrait(activity)) {
+                result = 270;
+            } else {
+                result = 0;
+            }
+        } else if (rotation == Surface.ROTATION_180) {
+            if (Util.isPortrait(activity)) {
+                result = 180;
+            } else {
+                result = 270;
+            }
+        } else if (rotation == Surface.ROTATION_270) {
+            if (Util.isPortrait(activity)) {
+                result = 90;
+            } else {
+                result = 180;
+            }
+        }
+
+        return result;
+    }
+
+    public static int addDegreesToRotation(int baseParam, int param) {
+        int rotation = baseParam;
+        rotation = (Math.abs(rotation + param));
+        int absRotation = rotation % 360;
+        if (absRotation == 0) {
+            rotation = 0;
+        } else {
+            rotation = absRotation;
+        }
+        return rotation;
     }
 }

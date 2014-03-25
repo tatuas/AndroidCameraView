@@ -7,8 +7,8 @@ public class Thumbnail extends PictureMaker {
     private CompressFormat format = CompressFormat.JPEG;
     private int quality = 100;
 
-    public Thumbnail(String path, int sizeScale) {
-        super(path);
+    public Thumbnail(String path, int sizeScale, int rotation, CameraType cameraType) {
+        super(path, rotation, cameraType.equals(CameraType.FRONT));
         this.thumbSizeScale = sizeScale;
     }
 
