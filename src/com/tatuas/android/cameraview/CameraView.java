@@ -23,7 +23,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
     private Camera camera;
     private Parameters cameraParams;
     private SurfaceHolder holder;
-    private OpenCameraFailedListener cameraFailedListener;
+    private CameraFailedListener cameraFailedListener;
     private CameraType cameraType = CameraType.BACK;
     private String cameraFocus = Camera.Parameters.FOCUS_MODE_AUTO;
 
@@ -177,7 +177,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         return camera.getParameters();
     }
 
-    public void setCameraFailedListener(OpenCameraFailedListener listener) {
+    public void setCameraFailedListener(CameraFailedListener listener) {
         this.cameraFailedListener = listener;
     }
 

@@ -16,6 +16,7 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
     private AfterShutterListener afterShutterListener;
     private CameraView cameraView;
     private boolean isFront;
+    private ShutterFailedListener shutterFailedListener;
 
     public Shutter(CameraView cameraView, Context context, Options options) {
         this.cameraView = cameraView;
@@ -75,6 +76,10 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
         this.afterShutterListener = listener;
     }
 
+    public void setShutterFailedListener(ShutterFailedListener listener) {
+        this.shutterFailedListener = listener;
+    }
+
     private void shot() {
         if (cameraView.getCamera() != null) {
             if (options.isExecAutoFocusWhenShutter()) {
@@ -104,6 +109,7 @@ public class Shutter implements AutoFocusCallback, PictureCallback {
 
             return (picResult && thumbResult);
         } catch (Exception e) {
+            this.shutterFailedListener.onFailed(e.toString());
             return false;
         }
     }

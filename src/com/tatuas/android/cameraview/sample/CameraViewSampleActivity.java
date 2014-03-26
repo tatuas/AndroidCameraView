@@ -6,12 +6,13 @@ import java.util.Date;
 
 import com.tatuas.android.cameraview.AfterShutterListener;
 import com.tatuas.android.cameraview.BeforeShutterListener;
-import com.tatuas.android.cameraview.OpenCameraFailedListener;
+import com.tatuas.android.cameraview.CameraFailedListener;
 import com.tatuas.android.cameraview.CameraView;
 import com.tatuas.android.cameraview.Options;
 import com.tatuas.android.cameraview.Shutter;
 import com.tatuas.android.cameraview.PictureSize;
 import com.tatuas.android.cameraview.PictureType;
+import com.tatuas.android.cameraview.ShutterFailedListener;
 
 import android.hardware.Camera;
 import android.os.Bundle;
@@ -36,10 +37,10 @@ public class CameraViewSampleActivity extends Activity {
 
         final CameraView cameraView = (CameraView) findViewById(R.id.cameraView1);
         cameraView.setCameraPreviewFocus(Camera.Parameters.FOCUS_MODE_AUTO);
-        cameraView.setCameraFailedListener(new OpenCameraFailedListener() {
+        cameraView.setCameraFailedListener(new CameraFailedListener() {
             @Override
-            public void onFailed(String errorMsg) {
-                Toast.makeText(cameraView.getContext(), errorMsg, Toast.LENGTH_LONG)
+            public void onFailed(String errorMessage) {
+                Toast.makeText(cameraView.getContext(), errorMessage, Toast.LENGTH_LONG)
                         .show();
             }
         });
@@ -65,6 +66,14 @@ public class CameraViewSampleActivity extends Activity {
             @Override
             public void afterShutter() {
                 Toast.makeText(cameraView.getContext(), "After shutter",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+
+        shutter.setShutterFailedListener(new ShutterFailedListener() {
+            @Override
+            public void onFailed(String errorMessage) {
+                Toast.makeText(cameraView.getContext(), "Failed shutter",
                         Toast.LENGTH_LONG).show();
             }
         });
