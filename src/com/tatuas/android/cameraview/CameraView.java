@@ -4,24 +4,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.tatuas.android.cameraview.Size.AspectRatio;
+import com.tatuas.android.cameraview.PictureSize.AspectRatio;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
 import android.util.AttributeSet;
-import android.view.Display;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup.LayoutParams;
 
+@SuppressLint("InlinedApi")
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
+    private final static String NAMESPACE = "http://tatuas.com/android/AndroidCameraView";
     private Camera camera;
+    private Parameters cameraParams;
     private SurfaceHolder holder;
-    private Camera.Parameters params;
+    private OpenCameraFailedListener cameraFailedListener;
+    private CameraType cameraType = CameraType.BACK;
+    private String cameraFocus = Camera.Parameters.FOCUS_MODE_AUTO;
 
     public CameraView(Context context) {
         super(context);
@@ -30,29 +34,46 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
     public CameraView(Context context, AttributeSet attrs) {
         super(context, attrs);
+        setCameraTypeFromAttr(attrs.getAttributeValue(NAMESPACE, "camera"));
         setHolder();
     }
 
     public CameraView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+        setCameraTypeFromAttr(attrs.getAttributeValue(NAMESPACE, "camera"));
         setHolder();
     }
 
-    @SuppressWarnings("deprecation")
-    private void setHolder() {
-        holder = getHolder();
+    private void setCameraTypeFromAttr(String typeString) {
+        CameraType type = CameraType.BACK;
 
-        if (holder == null) {
+        if (typeString == null) {
             return;
         }
 
-        holder.addCallback(this);
-        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        switch (typeString) {
+            case "front":
+                type = CameraType.FRONT;
+                break;
+            case "back":
+                type = CameraType.BACK;
+                break;
+            default:
+                break;
+        }
+
+        this.cameraType = type;
     }
 
+    @SuppressLint("NewApi")
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (!hasCamera()) {
+            camera = null;
+            if (cameraFailedListener != null) {
+                this.cameraFailedListener
+                        .onFailed("This device has any camera");
+            }
             return;
         }
 
@@ -60,15 +81,30 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             camera.stopPreview();
             camera.release();
             camera = null;
+            if (cameraFailedListener != null) {
+                this.cameraFailedListener.onFailed("Something Error");
+            }
             return;
         }
+
         try {
-            camera = Camera.open();
+            if (Util.isFroyo()) {
+                camera = Camera.open();
+            } else {
+                camera = Camera.open(cameraType.getCameraId());
+            }
+            cameraParams = camera.getParameters();
         } catch (Exception e) {
+            if (cameraFailedListener != null) {
+                this.cameraFailedListener.onFailed(e.toString());
+            }
             camera = null;
         }
 
         if (camera == null) {
+            if (cameraFailedListener != null) {
+                this.cameraFailedListener.onFailed("Something Error");
+            }
             return;
         }
 
@@ -76,6 +112,19 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             camera.setPreviewDisplay(holder);
             camera.startPreview();
         } catch (Exception e) {
+            camera.release();
+            if (cameraFailedListener != null) {
+                this.cameraFailedListener.onFailed(e.toString());
+            }
+            camera = null;
+            return;
+        }
+    }
+
+    @Override
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        if (camera != null) {
+            camera.stopPreview();
             camera.release();
             camera = null;
         }
@@ -95,27 +144,78 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
 
         camera.stopPreview();
 
-        params = camera.getParameters();
-
-        if (params != null) {
-            setCameraPreviewSize(Size.AspectRatio.NORMAL, width, height);
-            setAntiBanding(Camera.Parameters.ANTIBANDING_OFF);
-            setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+        if (cameraParams != null) {
+            setCameraPreviewSize(PictureSize.AspectRatio.NORMAL, width, height);
             setMaxPictureSize(AspectRatio.NORMAL);
-            setCameraDisplayOrientation(getRotationValue());
-            params.setRotation(getRotationValue());
-            camera.setParameters(params);
+            setFocusMode(cameraFocus);
+            setCameraDisplayOrientation(Util
+                    .getDisplayRotationValue((Activity) getContext()));
+
+            camera.setParameters(cameraParams);
         }
 
         camera.startPreview();
     }
 
-    public void setCameraDisplayOrientation(int rotation) {
+    public void setCameraType(CameraType type) {
+        this.cameraType = type;
+    }
+
+    public CameraType getCameraType() {
+        return this.cameraType;
+    }
+
+    public void setCameraPreviewFocus(String type) {
+        this.cameraFocus = type;
+    }
+
+    public Camera getCamera() {
+        return camera;
+    }
+
+    public Camera.Parameters getCameraParams() {
+        return camera.getParameters();
+    }
+
+    public void setCameraFailedListener(OpenCameraFailedListener listener) {
+        this.cameraFailedListener = listener;
+    }
+
+    @SuppressWarnings("deprecation")
+    private void setHolder() {
+        holder = getHolder();
+
+        if (holder == null) {
+            return;
+        }
+
+        holder.addCallback(this);
+        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+    }
+
+    private boolean hasCamera() {
+        boolean flag = false;
+        flag = getContext().getPackageManager().hasSystemFeature(
+                PackageManager.FEATURE_CAMERA);
+
+        if (Util.is2012Nexus7(cameraType)) {
+            flag = true;
+        }
+
+        return flag;
+    }
+
+    private void setCameraDisplayOrientation(int rotation) {
         camera.setDisplayOrientation(rotation);
     }
 
-    public void setCameraPreviewSize(Size.AspectRatio aspect, int width,
-            int height) {
+    public boolean isSupportedAutoFocus() {
+        return getContext().getPackageManager().hasSystemFeature(
+                "android.hardware.camera.autofocus");
+    }
+
+    private void setCameraPreviewSize(PictureSize.AspectRatio aspect,
+            int width, int height) {
         int baseLength = 0;
         int otherLength = 0;
 
@@ -123,15 +223,15 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
-        if (isPortrait()) {
+        if (Util.isPortrait(getContext())) {
             baseLength = width;
         } else {
             baseLength = height;
         }
 
-        if (aspect == (Size.AspectRatio.NORMAL)) {
+        if (aspect == (PictureSize.AspectRatio.NORMAL)) {
             otherLength = (baseLength / 3) * 4;
-        } else if (aspect == (Size.AspectRatio.WIDE)) {
+        } else if (aspect == (PictureSize.AspectRatio.WIDE)) {
             otherLength = (baseLength / 9) * 16;
         } else {
             return;
@@ -142,7 +242,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
-        if (isPortrait()) {
+        if (Util.isPortrait(getContext())) {
             l.width = baseLength;
             l.height = otherLength;
         } else {
@@ -150,7 +250,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             l.width = otherLength;
         }
 
-        List<android.hardware.Camera.Size> previewSizes = params
+        List<android.hardware.Camera.Size> previewSizes = cameraParams
                 .getSupportedPreviewSizes();
         List<Integer> widths = new ArrayList<Integer>();
         List<Integer> heights = new ArrayList<Integer>();
@@ -170,7 +270,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
         int h = 0;
         Double d1;
         Double d2;
-        if (aspect == Size.AspectRatio.NORMAL) {
+        if (aspect == PictureSize.AspectRatio.NORMAL) {
             d2 = Double.valueOf((double) 4.0 / (double) 3.0);
         } else {
             d2 = Double.valueOf((double) 16 / (double) 9);
@@ -185,51 +285,23 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             }
         }
 
-        params.setPreviewSize(w, h);
+        cameraParams.setPreviewSize(w, h);
         setLayoutParams(l);
     }
 
-    private boolean hasCamera() {
-        if (getContext().getPackageManager().hasSystemFeature(
-                PackageManager.FEATURE_CAMERA)) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    public boolean isSupportedAutoFocus() {
-        return getContext().getPackageManager().hasSystemFeature(
-                "android.hardware.camera.autofocus");
-    }
-
-    public void setAntiBanding(String mode) {
-        List<String> supported = params.getSupportedAntibanding();
-        if (supported == null) {
-            return;
-        }
-        if (supported.contains(mode)) {
-            params.setAntibanding(mode);
-        }
-    }
-
     public void setFocusMode(String mode) {
-        if (params == null) {
+        if (cameraParams == null) {
             return;
         }
 
-        List<String> supported = params.getSupportedFocusModes();
+        List<String> supported = cameraParams.getSupportedFocusModes();
         if (supported.contains(mode)) {
-            params.setFocusMode(mode);
+            cameraParams.setFocusMode(mode);
         }
     }
 
-    public void setPictureRotation() {
-
-    }
-
-    public void setMaxPictureSize(Size.AspectRatio aspect) {
-        if (params == null) {
+    private void setMaxPictureSize(PictureSize.AspectRatio aspect) {
+        if (cameraParams == null) {
             return;
         }
 
@@ -237,67 +309,12 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
             return;
         }
 
-        List<Camera.Size> pictureSizes = params.getSupportedPictureSizes();
-        Size size = Size.getMaxSizeByAspectRatio(pictureSizes, aspect);
-        params.setPictureSize(size.width, size.height);
-        params.setRotation(getRotationValue());
+        List<Camera.Size> pictureSizes = cameraParams
+                .getSupportedPictureSizes();
+        PictureSize size = PictureSize.getMaxSizeByAspectRatio(pictureSizes,
+                aspect);
+        cameraParams.setPictureSize(size.width, size.height);
     }
 
-    public boolean isPortrait() {
-        return (getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT);
-    }
 
-    public boolean isLandscape() {
-        return (getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
-    }
-
-    public int getRotationValue() {
-        Display display = ((Activity) getContext()).getWindowManager()
-                .getDefaultDisplay();
-        int rotation = display.getRotation();
-        switch (rotation) {
-            case Surface.ROTATION_0:
-                if (isLandscape()) {
-                    return 0;
-                } else {
-                    return 90;
-                }
-            case Surface.ROTATION_90:
-                if (isPortrait()) {
-                    return 270;
-                } else {
-                    return 0;
-                }
-            case Surface.ROTATION_180:
-                if (isPortrait()) {
-                    return 180;
-                } else {
-                    return 270;
-                }
-            case Surface.ROTATION_270:
-                if (isPortrait()) {
-                    return 90;
-                } else {
-                    return 180;
-                }
-        }
-        return 0;
-    }
-
-    @Override
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        if (camera != null) {
-            camera.stopPreview();
-            camera.release();
-            camera = null;
-        }
-    }
-
-    public Camera getCamera() {
-        return camera;
-    }
-
-    public Camera.Parameters getCameraParams() {
-        return camera.getParameters();
-    }
 }

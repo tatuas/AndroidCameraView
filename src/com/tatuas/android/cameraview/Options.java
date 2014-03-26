@@ -4,15 +4,16 @@ import android.graphics.Bitmap.CompressFormat;
 import android.graphics.Bitmap.Config;
 
 public class Options {
-    private boolean reStartPreviewAfterShutter = true;
     private int quality = 100;
-    private Size pictureSize = new Size();
-    private Type pictureType = Type.JPEG;
+    private PictureSize pictureSize = new PictureSize();
+    private PictureType pictureType = PictureType.JPEG;
     private Config config = Config.RGB_565;
     private int calculateScale = 1;
     private boolean useCalculateScale = false;
+    private boolean reStartPreviewAfterShutter = true;
+    private boolean execAutoFocusWhenShutter = false;
 
-    public void setPictureSize(Size size) {
+    public void setPictureSize(PictureSize size) {
         this.pictureSize = size;
     }
 
@@ -24,30 +25,17 @@ public class Options {
         return this.pictureSize.height;
     }
 
-    public void setCalculateScale(int scale) {
-        this.calculateScale = scale;
-        this.useCalculateScale = true;
-    }
-
     public int getCalculateScale() {
         return this.calculateScale;
     }
 
-    public boolean useCalculateScale() {
-        return this.useCalculateScale;
-    }
-
-    public void setPictureType(Type type) {
+    public void setPictureType(PictureType type) {
         this.pictureType = type;
         this.useCalculateScale = false;
     }
 
     public CompressFormat getPictureType() {
         return pictureType.toFormat();
-    }
-
-    public void setRestartPreviewAfterShutter(boolean restart) {
-        this.reStartPreviewAfterShutter = restart;
     }
 
     public void setPictureConfig(Config config) {
@@ -58,11 +46,7 @@ public class Options {
         return this.config;
     }
 
-    public boolean isRestartPreviewAfterShutter() {
-        return this.reStartPreviewAfterShutter;
-    }
-
-    public Type getType() {
+    public PictureType getType() {
         return this.pictureType;
     }
 
@@ -72,5 +56,30 @@ public class Options {
 
     public int getQuality() {
         return this.quality;
+    }
+
+    public void setCalculateScale(int scale) {
+        this.calculateScale = scale;
+        this.useCalculateScale = true;
+    }
+
+    public boolean isUseCalculateScale() {
+        return this.useCalculateScale;
+    }
+
+    public void setRestartPreviewAfterShutter(boolean restart) {
+        this.reStartPreviewAfterShutter = restart;
+    }
+
+    public boolean isRestartPreviewAfterShutter() {
+        return this.reStartPreviewAfterShutter;
+    }
+
+    public void setExecAutoFocusWhenShutter(boolean shutter) {
+        this.execAutoFocusWhenShutter = shutter;
+    }
+
+    public boolean isExecAutoFocusWhenShutter() {
+        return this.execAutoFocusWhenShutter;
     }
 }

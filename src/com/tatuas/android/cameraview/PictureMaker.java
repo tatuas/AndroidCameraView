@@ -6,12 +6,18 @@ import java.io.FileOutputStream;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 
 public class PictureMaker {
-    private String path;
+    protected String path;
+    protected float rotation = 0;
 
-    public PictureMaker(String path) {
+    public PictureMaker(String path, int rotation, boolean isFront) {
         this.path = path;
+        this.rotation = (float) rotation;
+        if (isFront) {
+            this.rotation = Util.addDegreesToRotation((int)this.rotation, 180);
+        }
     }
 
     public int calculateInSampleSize(BitmapFactory.Options options,
@@ -43,11 +49,23 @@ public class PictureMaker {
             fos = new FileOutputStream(path);
             Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length,
                     bitmapOptions);
-            bitmap.compress(format, quality, fos);
+
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotation);
+
+            Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, width,
+                    height, matrix, true);
+            rotatedBitmap.compress(format, quality, fos);
             fos.close();
 
             if (bitmap != null) {
                 bitmap.recycle();
+            }
+
+            if (rotatedBitmap != null) {
+                rotatedBitmap.recycle();
             }
 
             return isPictureMaked();
@@ -58,21 +76,30 @@ public class PictureMaker {
 
     public boolean make(byte[] data, BitmapFactory.Options bitmapOptions,
             Options options) {
-        Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length,
-                bitmapOptions);
-
-        FileOutputStream fos;
         try {
-            fos = new FileOutputStream(path);
-            bitmap.compress(options.getPictureType(),
+            Bitmap bitmap = BitmapFactory.decodeByteArray(data, 0, data.length,
+                    bitmapOptions);
+            FileOutputStream fos = new FileOutputStream(path);
+            int width = bitmap.getWidth();
+            int height = bitmap.getHeight();
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotation);
+
+            Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, width, height,
+                    matrix, true);
+            rotatedBitmap.compress(options.getPictureType(),
                     options.getQuality(), fos);
             fos.close();
+
+            if (bitmap != null) {
+                bitmap.recycle();
+            }
+
+            if (rotatedBitmap != null) {
+                rotatedBitmap.recycle();
+            }
         } catch (Exception e) {
             return false;
-        }
-
-        if (bitmap != null) {
-            bitmap.recycle();
         }
 
         return isPictureMaked();
